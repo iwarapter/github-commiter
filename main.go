@@ -50,7 +50,8 @@ func main() {
 	}
 	changes := &[]githubv4.FileAddition{}
 	for name, status := range s {
-		if status.Worktree == git.Modified {
+		switch status.Worktree {
+		case git.Modified, git.Added:
 			b, _ := os.ReadFile(name)
 			content := base64.StdEncoding.EncodeToString(b)
 			*changes = append(*changes, githubv4.FileAddition{
