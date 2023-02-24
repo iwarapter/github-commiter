@@ -50,7 +50,8 @@ func main() {
 	}
 	changes := &[]githubv4.FileAddition{}
 	for name, status := range s {
-		if status.Worktree == git.Modified || status.Staging == git.Added {
+		if status.Worktree == git.Modified || status.Staging == git.Added || status.Staging == git.Modified {
+			log.Printf("adding %s", name)
 			b, _ := os.ReadFile(name)
 			content := base64.StdEncoding.EncodeToString(b)
 			*changes = append(*changes, githubv4.FileAddition{
@@ -63,7 +64,6 @@ func main() {
 		log.Printf("no changes to commit, exiting")
 		os.Exit(0)
 	}
-
 	src := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
 	)
