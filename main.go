@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"log"
+	"os"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/jessevdk/go-flags"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
-	"log"
-	"os"
 )
 
 func main() {
@@ -49,6 +50,7 @@ func main() {
 		log.Fatalf("unable to open repository: %s", err)
 	}
 	changes := &[]githubv4.FileAddition{}
+	deletes := &[]githubv4.FileDeletion{}
 	for name, status := range s {
 		if status.Worktree == git.Modified || status.Staging == git.Added || status.Staging == git.Modified {
 			log.Printf("adding %s", name)
@@ -58,9 +60,13 @@ func main() {
 				Path:     githubv4.String(name),
 				Contents: githubv4.Base64String(content),
 			})
+		} else if status.Staging == git.Deleted {
+			*deletes = append(*deletes, githubv4.FileDeletion{
+				Path: githubv4.String(name),
+			})
 		}
 	}
-	if len(*changes) == 0 {
+	if (len(*changes) + len(*deletes)) == 0 {
 		log.Printf("no changes to commit, exiting")
 		os.Exit(0)
 	}
@@ -86,6 +92,7 @@ func main() {
 		Message: githubv4.CommitMessage{Headline: githubv4.String(opts.Message)},
 		FileChanges: &githubv4.FileChanges{
 			Additions: changes,
+			Deletions: deletes,
 		},
 		ExpectedHeadOid: githubv4.GitObjectID(rev.Hash().String()),
 	}
